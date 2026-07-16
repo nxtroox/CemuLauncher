@@ -4,13 +4,28 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      dotnet-updates:
+        applies-to: version-updates
+        patterns:
+          - "*"
 
   - package-ecosystem: "nuget"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      nuget-updates:
+        applies-to: version-updates
+        patterns:
+          - "*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions-updates:
+        applies-to: version-updates
+        patterns:
+          - "*"
