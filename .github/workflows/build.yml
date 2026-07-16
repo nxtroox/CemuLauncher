@@ -32,7 +32,7 @@ jobs:
           path: ${{ env.PUBLISH_DIR }}/
 
       - name: Compile installer
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.8
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.9
         with:
           path: Installer/Installer.iss
 
