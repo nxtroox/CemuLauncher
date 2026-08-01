@@ -7,9 +7,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Version>0.4.0</Version>
-    <FileVersion>0.4.0.0</FileVersion>
-    <AssemblyVersion>0.4.0.0</AssemblyVersion>
+    <Version>0.5.0</Version>
+    <FileVersion>0.5.0.0</FileVersion>
+    <AssemblyVersion>0.5.0.0</AssemblyVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\Icon.ico</ApplicationIcon>
   </PropertyGroup>
@@ -44,8 +44,8 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DefineConstants>RELEASE</DefineConstants>
     <Optimize>true</Optimize>
-	  <DebugSymbols>false</DebugSymbols>
-	  <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
