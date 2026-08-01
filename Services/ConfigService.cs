@@ -7,10 +7,22 @@ namespace CemuLauncher.Services;
 
 public sealed class ConfigService(IDeserializer deserializer, ISerializer serializer) {
     private Config? _cached;
+    private string? _path;
 
-    public async Task<Config> GetAsync() {
-        return _cached ??= await LoadAsync(Path.Combine(Environment.GetFolderPath(
-            Environment.SpecialFolder.ApplicationData), "CemuLauncher", "config.yml"));
+    public async Task<Config> GetAsync() =>
+        _cached ??= await LoadAsync(_path ??= GetPath());
+
+    public Config Config =>
+        _cached ?? throw new InvalidOperationException("Config not loaded");
+
+    private static string GetPath() {
+        var appDataConfig = Path.Combine(Environment.GetFolderPath(
+            Environment.SpecialFolder.ApplicationData), "CemuLauncher", "config.yml");
+
+        var exeConfig = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
+            "config.yml");
+
+        return File.Exists(exeConfig) ? exeConfig : appDataConfig;
     }
 
     private async Task<Config> LoadAsync(string path) {

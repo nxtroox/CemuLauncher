@@ -3,7 +3,7 @@ using System.Net.Http;
 
 namespace CemuLauncher.Services;
 
-public sealed class Downloader(HttpClient httpClient) {
+public sealed class DownloadService(HttpClient httpClient) {
     public async Task DownloadAsync(string url, string downloadPath, string fileName, IProgress<double>? progress, CancellationToken cancellationToken = default) {
         var fullPath = Path.Combine(downloadPath, fileName);
 

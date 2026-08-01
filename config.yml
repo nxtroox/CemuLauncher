@@ -1,5 +1,5 @@
 ﻿updatePrompt: false
 passArguments: true
 cemuPath: cemu
-portable: true
+portableCemu: true
 downloadPath: downloads

@@ -7,7 +7,7 @@ using CemuLauncher.Services;
 
 namespace CemuLauncher.Models;
 
-public sealed class Cemu {
+public sealed class Cemu(ConfigService configService, DownloadService downloadService) {
     public string? Version { get; set; }
 
     private const string DownloadUrl =
@@ -16,35 +16,27 @@ public sealed class Cemu {
     private const string VersionFileName = "version.txt";
     private const string ZipFileName = "cemu-bin-windows-x64.zip";
 
-    private string BasePath { get; } = Path.Combine(Environment.GetFolderPath(
-        Environment.SpecialFolder.ApplicationData), "CemuLauncher");
+    private string BasePath { get; } =
+        Path.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.yml"))
+            ? AppDomain.CurrentDomain.BaseDirectory
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "CemuLauncher");
     private string CemuPath =>
-        Path.IsPathRooted(_config!.CemuPath)
-            ? _config!.CemuPath
-            : Path.Combine(BasePath, _config!.CemuPath);
+        Path.IsPathRooted(_config.CemuPath)
+            ? _config.CemuPath
+            : Path.Combine(BasePath, _config.CemuPath);
     private string ExecutablePath =>
         Path.Combine(CemuPath, "Cemu.exe");
     private string DownloadPath =>
-        Path.IsPathRooted(_config!.DownloadPath)
-            ? _config!.DownloadPath
-            : Path.Combine(BasePath, _config!.DownloadPath);
+        Path.IsPathRooted(_config.DownloadPath)
+            ? _config.DownloadPath
+            : Path.Combine(BasePath, _config.DownloadPath);
     private string ZipFilePath =>
         Path.Combine(DownloadPath, ZipFileName);
     private string VersionFilePath =>
         Path.Combine(BasePath, VersionFileName);
 
-    private readonly Downloader _downloader;
-    private Config? _config;
-
-    public Cemu(ConfigService configService, Downloader downloader) {
-        _downloader = downloader;
-
-        _ = InitializeAsync(configService);
-    }
-
-    private async Task InitializeAsync(ConfigService configService) {
-        _config = await configService.GetAsync();
-    }
+    private readonly Config _config = configService.Config;
 
     public void Launch() {
         if (!File.Exists(ExecutablePath))
@@ -55,7 +47,7 @@ public sealed class Cemu {
             UseShellExecute = true
         };
 
-        if (_config!.PassArguments) {
+        if (_config.PassArguments) {
             foreach (var arg in Environment.GetCommandLineArgs().Skip(1))
                 startInfo.ArgumentList.Add(arg);
         }
@@ -75,7 +67,7 @@ public sealed class Cemu {
     public bool CheckUpdate(string? newVersion) {
         var update = Version == null || Version != newVersion;
 
-        if (update && _config!.UpdatePrompt)
+        if (update && _config.UpdatePrompt)
             update = PromptUpdate();
 
         return update;
@@ -88,7 +80,7 @@ public sealed class Cemu {
         Directory.CreateDirectory(CemuPath);
         Directory.CreateDirectory(DownloadPath);
 
-        await _downloader.DownloadAsync(
+        await downloadService.DownloadAsync(
             DownloadUrl, DownloadPath, ZipFileName, downloadProgress);
 
         await UnpackAsync();
@@ -109,7 +101,7 @@ public sealed class Cemu {
         var portablePath = Path.Combine(CemuPath, "portable");
         var disabledPath = Path.Combine(CemuPath, "portable.disabled");
 
-        if (_config!.Portable)
+        if (_config.PortableCemu)
             if (Path.Exists(disabledPath))
                 Directory.Move(disabledPath, portablePath);
             else

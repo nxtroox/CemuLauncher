@@ -27,7 +27,7 @@ public partial class App : Application {
                     );
                 });
 
-                services.AddSingleton<Downloader>();
+                services.AddSingleton<DownloadService>();
 
                 services.AddSingleton(_ => new DeserializerBuilder()
                     .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -49,6 +49,10 @@ public partial class App : Application {
 
     protected override async void OnStartup(StartupEventArgs e) {
         await AppHost!.StartAsync();
+
+        await AppHost.Services
+            .GetRequiredService<ConfigService>()
+            .GetAsync();
 
         var window = AppHost.Services.GetRequiredService<MainWindow>();
         window.Show();
