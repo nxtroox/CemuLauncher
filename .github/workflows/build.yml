@@ -23,7 +23,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Publish
-        run: dotnet publish CemuLauncher.slnx --configuration Release --runtime win-x64 --output ${{ env.PUBLISH_DIR }}
+        run: dotnet publish CemuLauncher.csproj --configuration Release --runtime win-x64 --output ${{ env.PUBLISH_DIR }}
 
       - name: Upload binaries
         uses: actions/upload-artifact@v7
