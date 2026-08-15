@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="CemuNotFoundError" xml:space="preserve">
+    <value>The Cemu executable was not found.</value>
+  </data>
+  <data name="NewVersionNotInitializedError" xml:space="preserve">
+    <value>NewVersion was not initialized.</value>
+  </data>
+</root>

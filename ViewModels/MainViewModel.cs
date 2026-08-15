@@ -1,58 +1,64 @@
-﻿using System.Net.Http;
-using System.Windows;
-using CemuLauncher.Helpers;
+﻿using System.Windows;
 using CemuLauncher.Models;
-using CemuLauncher.Resources;
+using CemuLauncher.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Extensions.Localization;
 
 namespace CemuLauncher.ViewModels;
 
 public partial class MainViewModel : ObservableObject {
     [ObservableProperty]
-    private string? status;
+    public partial string? Status { get; set; }
 
     [ObservableProperty]
-    private bool progressIsIndeterminate = true;
+    public partial bool ProgressIsIndeterminate { get; set; } = true;
 
     [ObservableProperty]
-    private double progressValue = -1;
+    public partial double ProgressValue { get; set; } = -1;
 
     public IProgress<double> Progress { get; }
 
     private readonly Cemu _cemu;
-    private readonly HttpClient _httpClient;
+    private readonly IStringLocalizer _localizer;
 
-    public MainViewModel(Cemu cemu, IHttpClientFactory httpClientFactory) {
+    public MainViewModel(Cemu cemu, IStringLocalizer<MainViewModel> localizer) {
         _cemu = cemu;
-        _httpClient = httpClientFactory.CreateClient("Default");
+        _localizer = localizer;
 
-        Status = Strings.UpdateCheck;
+        Status = _localizer["UpdateCheck"];
 
         Progress = new Progress<double>(p => {
             if (p < 0) {
                 ProgressIsIndeterminate = true;
             } else {
-                Status = Strings.UpdateAvailable;
+                Status = _localizer["UpdateAvailable"];
                 ProgressIsIndeterminate = false;
                 ProgressValue = p;
             }
         });
     }
 
-    public async Task OnWindowLoadedAsync() {
+    private bool PromptUpdate() =>
+        MessageBox.Show(
+            _localizer["UpdatePrompt"],
+            _localizer["UpdateAvailable"],
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Information)
+        == MessageBoxResult.Yes;
+
+    public async Task OnWindowLoadedAsync(CancellationToken cancellationToken = default) {
         try {
-            await _cemu.SetLocalVersionAsync();
+            var needsUpdate = await _cemu.NeedsUpdateAsync(cancellationToken);
+            var promptResult = PromptUpdate();
 
-            var newVersion = await CemuManager.GetLatestCommitAsync(_httpClient);
-
-            if (_cemu.CheckUpdate(newVersion))
-                await _cemu.InstallAsync(newVersion, Progress);
+            if (needsUpdate && promptResult)
+                await _cemu.InstallAsync(Progress, cancellationToken);
 
             _cemu.Launch();
 
             Application.Current.Shutdown();
         } catch (Exception ex) {
-            Status = string.Join(" ", [Strings.ErrorPrefix, ex.Message]);
+            Status = string.Join(" ", [_localizer["ErrorPrefix"], ex.Message]);
         }
     }
 }

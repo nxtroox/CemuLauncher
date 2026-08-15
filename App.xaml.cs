@@ -18,16 +18,23 @@ public partial class App : Application {
     public App() {
         AppHost = Host.CreateDefaultBuilder()
             .ConfigureServices((hostContext, services) => {
-                services.AddHttpClient("Default", client => {
+                services.AddHttpClient<DownloadService>(client => {
                     client.DefaultRequestHeaders.UserAgent.Add(
                         new ProductInfoHeaderValue(
-                            "CemuLauncher",
-                            Assembly.GetExecutingAssembly().GetName().Version?.ToString()
-                        )
+                            "CemuLauncher", Assembly.GetExecutingAssembly().GetName().Version?.ToString())
                     );
                 });
 
-                services.AddSingleton<DownloadService>();
+                services.AddHttpClient<CemuService>(client => {
+                    client.DefaultRequestHeaders.UserAgent.Add(
+                        new ProductInfoHeaderValue(
+                            "CemuLauncher", Assembly.GetExecutingAssembly().GetName().Version?.ToString())
+                    );
+                });
+
+                services.AddLocalization(config => {
+                    config.ResourcesPath = "Resources";
+                });
 
                 services.AddSingleton(_ => new DeserializerBuilder()
                     .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -38,6 +45,8 @@ public partial class App : Application {
                     .Build());
 
                 services.AddSingleton<ConfigService>();
+
+                services.AddSingleton<PathService>();
 
                 services.AddSingleton<Cemu>();
 

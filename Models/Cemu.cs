@@ -1,49 +1,27 @@
 ﻿using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Windows;
-using CemuLauncher.Resources;
 using CemuLauncher.Services;
+using Microsoft.Extensions.Localization;
 
 namespace CemuLauncher.Models;
 
-public sealed class Cemu(ConfigService configService, DownloadService downloadService) {
-    public string? Version { get; set; }
+public sealed class Cemu(ConfigService configService, DownloadService downloadService, IStringLocalizer<Cemu> localizer, CemuService cemuService, PathService pathService) {
+    public string? InstalledVersion { get; private set; }
+    private string? NewVersion { get; set; }
 
     private const string DownloadUrl =
         "https://nightly.link/cemu-project/Cemu/workflows/build_check/main/cemu-bin-windows-x64.zip";
 
-    private const string VersionFileName = "version.txt";
-    private const string ZipFileName = "cemu-bin-windows-x64.zip";
-
-    private string BasePath { get; } =
-        Path.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.yml"))
-            ? AppDomain.CurrentDomain.BaseDirectory
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "CemuLauncher");
-    private string CemuPath =>
-        Path.IsPathRooted(_config.CemuPath)
-            ? _config.CemuPath
-            : Path.Combine(BasePath, _config.CemuPath);
-    private string ExecutablePath =>
-        Path.Combine(CemuPath, "Cemu.exe");
-    private string DownloadPath =>
-        Path.IsPathRooted(_config.DownloadPath)
-            ? _config.DownloadPath
-            : Path.Combine(BasePath, _config.DownloadPath);
-    private string ZipFilePath =>
-        Path.Combine(DownloadPath, ZipFileName);
-    private string VersionFilePath =>
-        Path.Combine(BasePath, VersionFileName);
-
     private readonly Config _config = configService.Config;
 
     public void Launch() {
-        if (!File.Exists(ExecutablePath))
-            throw new FileNotFoundException(Strings.Error_CemuNotFound, ExecutablePath);
+        if (!File.Exists(pathService.ExecutablePath))
+            throw new FileNotFoundException(localizer["CemuNotFoundError"], pathService.ExecutablePath);
 
         var startInfo = new ProcessStartInfo() {
-            FileName = ExecutablePath,
+            FileName = pathService.ExecutablePath,
+            WorkingDirectory = pathService.CemuPath,
             UseShellExecute = true
         };
 
@@ -55,74 +33,49 @@ public sealed class Cemu(ConfigService configService, DownloadService downloadSe
         Process.Start(startInfo);
     }
 
-    public async Task SetLocalVersionAsync() {
-        if (!File.Exists(VersionFilePath))
-            return;
+    public async Task<bool> NeedsUpdateAsync(CancellationToken cancellationToken = default) {
+        InstalledVersion ??= await cemuService.GetLocalVersionAsync(cancellationToken);
+        NewVersion ??= await cemuService.GetLatestVersionAsync(cancellationToken);
+
+        return InstalledVersion != NewVersion;
+    }
+
+    public async Task InstallAsync(IProgress<double>? downloadProgress = null, CancellationToken cancellationToken = default) {
+        if (NewVersion is null)
+            throw new InvalidOperationException(localizer["NewVersionNotInitializedError"]);
+
+        Directory.CreateDirectory(pathService.BasePath);
+        Directory.CreateDirectory(pathService.CemuPath);
+        Directory.CreateDirectory(pathService.DownloadPath);
 
         try {
-            Version = await File.ReadAllTextAsync(VersionFilePath);
-        } catch { }
+            await downloadService.DownloadAsync(
+                DownloadUrl, pathService.DownloadPath, PathService.ZipFileName, downloadProgress, cancellationToken);
+
+            await ZipFile.ExtractToDirectoryAsync(
+                pathService.ZipFilePath, pathService.CemuPath, overwriteFiles: true, cancellationToken);
+
+            ApplyPortable();
+
+            InstalledVersion = NewVersion;
+
+            await File.WriteAllTextAsync(pathService.VersionFilePath, InstalledVersion, cancellationToken);
+        } finally {
+            if (File.Exists(pathService.ZipFilePath))
+                File.Delete(pathService.ZipFilePath);
+        }
     }
 
-    public bool CheckUpdate(string? newVersion) {
-        var update = Version == null || Version != newVersion;
+    private void ApplyPortable() {
+        var portablePath = Path.Combine(pathService.CemuPath, "portable");
+        var disabledPath = Path.Combine(pathService.CemuPath, "portable.disabled");
 
-        if (update && _config.UpdatePrompt)
-            update = PromptUpdate();
-
-        return update;
-    }
-
-    public async Task InstallAsync(string? newVersion, IProgress<double>? downloadProgress = null) {
-        Version = newVersion;
-
-        Directory.CreateDirectory(BasePath);
-        Directory.CreateDirectory(CemuPath);
-        Directory.CreateDirectory(DownloadPath);
-
-        await downloadService.DownloadAsync(
-            DownloadUrl, DownloadPath, ZipFileName, downloadProgress);
-
-        await UnpackAsync();
-
-        ApplyOptions();
-
-        await CleanupAsync();
-    }
-
-    private async Task UnpackAsync() {
-        if (File.Exists(ExecutablePath))
-            File.Delete(ExecutablePath);
-
-        await ZipFile.ExtractToDirectoryAsync(ZipFilePath, CemuPath, overwriteFiles: true);
-    }
-
-    private void ApplyOptions() {
-        var portablePath = Path.Combine(CemuPath, "portable");
-        var disabledPath = Path.Combine(CemuPath, "portable.disabled");
-
-        if (_config.PortableCemu)
-            if (Path.Exists(disabledPath))
+        if (_config.PortableCemu) {
+            if (Directory.Exists(disabledPath))
                 Directory.Move(disabledPath, portablePath);
             else
                 Directory.CreateDirectory(portablePath);
-        else if (Path.Exists(portablePath))
+        } else if (Directory.Exists(portablePath))
             Directory.Move(portablePath, disabledPath);
-    }
-
-    private static bool PromptUpdate() =>
-        MessageBox.Show(
-            Strings.UpdatePrompt,
-            Strings.UpdateAvailable,
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Information)
-        == MessageBoxResult.Yes;
-
-    private async Task CleanupAsync() {
-        if (File.Exists(ZipFilePath))
-            File.Delete(ZipFilePath);
-
-        if (Version != null)
-            await File.WriteAllTextAsync(VersionFilePath, Version);
     }
 }

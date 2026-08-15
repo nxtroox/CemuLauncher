@@ -21,8 +21,8 @@ public sealed class DownloadService(HttpClient httpClient) {
             progress?.Report(-1);
         }
 
-        using var downloadStream = await response.Content.ReadAsStreamAsync();
-        using var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None, 1024 * 1024, useAsync: true);
+        await using var downloadStream = await response.Content.ReadAsStreamAsync();
+        await using var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None, 1024 * 1024, useAsync: true);
 
         var buffer = new byte[81920];
         long totalRead = 0;

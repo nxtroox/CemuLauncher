@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="ErrorPrefix" xml:space="preserve">
+    <value>Fehler:</value>
+  </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>Update verfügbar!</value>
+  </data>
+  <data name="UpdateCheck" xml:space="preserve">
+    <value>Suche nach Updates...</value>
+  </data>
+  <data name="UpdatePrompt" xml:space="preserve">
+    <value>Möchtest du Cemu aktualisieren?</value>
+  </data>
+</root>

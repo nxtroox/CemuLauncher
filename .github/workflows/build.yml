@@ -3,15 +3,11 @@ name: Build (Windows x64)
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: windows-latest
-
-    env:
-      PUBLISH_DIR: publish
 
     steps:
       - name: Checkout repository
@@ -23,13 +19,17 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Publish
-        run: dotnet publish CemuLauncher.csproj --configuration Release --runtime win-x64 --output ${{ env.PUBLISH_DIR }}
+        run: >
+          dotnet publish CemuLauncher.csproj
+          --configuration Release
+          --runtime win-x64
+          --output publish/
 
       - name: Upload binaries
         uses: actions/upload-artifact@v7
         with:
           name: CemuLauncher-x64
-          path: ${{ env.PUBLISH_DIR }}/
+          path: publish/
 
       - name: Compile installer
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.9
