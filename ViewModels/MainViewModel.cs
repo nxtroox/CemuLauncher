@@ -20,10 +20,12 @@ public partial class MainViewModel : ObservableObject {
 
     private readonly Cemu _cemu;
     private readonly IStringLocalizer _localizer;
+    private readonly Config? _config;
 
-    public MainViewModel(Cemu cemu, IStringLocalizer<MainViewModel> localizer) {
+    public MainViewModel(Cemu cemu, IStringLocalizer<MainViewModel> localizer, ConfigService configService) {
         _cemu = cemu;
         _localizer = localizer;
+        _config = configService.Config;
 
         Status = _localizer["UpdateCheck"];
 
@@ -39,6 +41,7 @@ public partial class MainViewModel : ObservableObject {
     }
 
     private bool PromptUpdate() =>
+        !_config!.UpdatePrompt ||
         MessageBox.Show(
             _localizer["UpdatePrompt"],
             _localizer["UpdateAvailable"],
