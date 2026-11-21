@@ -11,6 +11,9 @@ Automatically installs and updates nightly builds of the Cemu emulator.
 
 </div>
 
+> [!CAUTION]
+> This project is unmaintained and thus unsecure. It will be replaced by my new and superior project [NightlyLauncher](https://github.com/nxtroox/NightlyLauncher).
+
 ## :cd: Installation
 
 Install the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0).
